@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -20,7 +21,10 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { SWAGGER_REFRESH_COOKIE } from '../config/swagger.config.js';
+import type { User } from '../generated/prisma/client.js';
 import { AuthService } from './auth.service.js';
+import { Authorization } from './decorators/authorization.decorator.js';
+import { Authorized } from './decorators/authorized.decorator.js';
 import { AuthResponseDto } from './dto/auth.response.dto.js';
 import { LoginRequestDto } from './dto/login.request.dto.js';
 import { RegisterRequestDto } from './dto/register.request.dto.js';
@@ -76,7 +80,9 @@ export class AuthController {
     headers: refreshCookieHeader,
   })
   @ApiBadRequestResponse({ description: 'Validation failed' })
-  @ApiNotFoundResponse({ description: 'User is not found or password is invalid' })
+  @ApiNotFoundResponse({
+    description: 'User is not found or password is invalid',
+  })
   async login(
     @Res({ passthrough: true }) res: Response,
     @Body() dto: LoginRequestDto,
@@ -97,7 +103,9 @@ export class AuthController {
     description: 'Tokens rotated. A new refresh cookie is set.',
     headers: refreshCookieHeader,
   })
-  @ApiUnauthorizedResponse({ description: 'Refresh token is missing or invalid' })
+  @ApiUnauthorizedResponse({
+    description: 'Refresh token is missing or invalid',
+  })
   @ApiNotFoundResponse({ description: 'User from the token no longer exists' })
   async refresh(
     @Res({ passthrough: true }) res: Response,
@@ -119,5 +127,12 @@ export class AuthController {
   })
   async logout(@Res({ passthrough: true }) res: Response) {
     return this.authService.logout(res);
+  }
+
+  @Authorization()
+  @Get('@me')
+  @HttpCode(HttpStatus.OK)
+  async me(@Authorized() user: User) {
+    return user;
   }
 }

@@ -83,7 +83,7 @@ export class AuthService {
         select: { id: true },
       });
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException('User is not found');
       }
       return this.auth(res, user.id);
     }
@@ -93,6 +93,14 @@ export class AuthService {
     // Delete refreshToken from cookies
     this.setCookie(res, 'refreshToken', new Date(0));
     return true;
+  }
+
+  async validate(id: string) {
+    const user = await this.prismaService.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
   private auth(res: Response, id: string) {
